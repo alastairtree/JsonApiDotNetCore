@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Middleware;
 using JsonApiDotNetCore.Queries;
@@ -12,6 +13,7 @@ using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
 using JsonApiDotNetCore.Serialization.Objects;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace JsonApiDotNetCore.Serialization.Building
 {
@@ -22,6 +24,8 @@ namespace JsonApiDotNetCore.Serialization.Building
 
         private readonly IResourceContextProvider _provider;
         private readonly IRequestQueryStringAccessor _queryStringAccessor;
+        private readonly LinkGenerator _linkGenerator;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IJsonApiOptions _options;
         private readonly IJsonApiRequest _request;
         private readonly IPaginationContext _paginationContext;
@@ -30,13 +34,17 @@ namespace JsonApiDotNetCore.Serialization.Building
                            IJsonApiRequest request,
                            IPaginationContext paginationContext,
                            IResourceContextProvider provider,
-                           IRequestQueryStringAccessor queryStringAccessor)
+                           IRequestQueryStringAccessor queryStringAccessor,
+                           LinkGenerator linkGenerator,
+                           IHttpContextAccessor httpContextAccessor)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _request = request ?? throw new ArgumentNullException(nameof(request));
             _paginationContext = paginationContext ?? throw new ArgumentNullException(nameof(paginationContext));
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _queryStringAccessor = queryStringAccessor ?? throw new ArgumentNullException(nameof(queryStringAccessor));
+            _linkGenerator = linkGenerator;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <inheritdoc />
@@ -233,7 +241,17 @@ namespace JsonApiDotNetCore.Serialization.Building
             var resourceContext = _provider.GetResourceContext(resourceName);
             if (ShouldAddResourceLink(resourceContext, LinkTypes.Self))
             {
-                return new ResourceLinks { Self = GetSelfResourceLink(resourceName, id) };
+                var routeData = new RouteValueDictionary(_httpContextAccessor.HttpContext.Request.RouteValues);
+                routeData["id"] = id;
+
+                return new ResourceLinks
+                {
+                    Self = _linkGenerator.GetPathByAction(
+                        _httpContextAccessor.HttpContext, action: "Get"
+                        , resourceName, routeData)
+                };
+
+                //return new ResourceLinks { Self = GetSelfResourceLink(resourceName, id) };
             }
 
             return null;
