@@ -6,7 +6,7 @@ namespace JsonApiDotNetCore.Resources.Annotations
     /// Used to expose a property on a resource class as a JSON:API attribute (https://jsonapi.org/format/#document-resource-object-attributes).
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
-    public class AttrAttribute : ResourceFieldAttribute
+    public sealed class AttrAttribute : ResourceFieldAttribute
     {
         private AttrCapabilities? _capabilities;
 

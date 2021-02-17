@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Reflection;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Middleware;
 using JsonApiDotNetCore.Resources;
@@ -30,8 +31,10 @@ namespace JsonApiDotNetCore.Serialization
             {
                 foreach (var attr in attributes)
                 {
-                    if (attr is RouteDataAttrAttribute routeAttr &&
-                        _httpContextAccessor.HttpContext.Request.RouteValues.TryGetValue(routeAttr.RouteDataKey,
+                    var routeAttribute = (FromRouteDataAttribute)attr.Property.GetCustomAttribute(typeof(FromRouteDataAttribute));
+
+                    if (routeAttribute != null &&
+                        _httpContextAccessor.HttpContext.Request.RouteValues.TryGetValue(routeAttribute.RouteDataKey,
                             out var routeValue))
                     {
                         attr.SetValue(resource, routeValue);
